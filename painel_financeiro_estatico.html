@@ -1,0 +1,414 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Painel Financeiro</title>
+<style>
+  html, body { margin: 0; padding: 0; background: #10161A; min-height: 100vh; }
+  #gate {
+    min-height: 100vh;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-family: -apple-system, "Segoe UI", Roboto, sans-serif;
+    padding: 24px;
+  }
+  #gate-box {
+    width: 100%;
+    max-width: 320px;
+    background: #161D22;
+    border: 1px solid #232C32;
+    border-radius: 10px;
+    padding: 28px 24px;
+  }
+  #gate-box .eyebrow { font-size: 11px; color: #7C8790; margin-bottom: 6px; }
+  #gate-box h1 {
+    font-family: Georgia, serif;
+    font-size: 20px;
+    color: #F3EFE6;
+    margin: 0 0 20px;
+    font-weight: 500;
+  }
+  #gate-box label { font-size: 11px; color: #8B959B; display: block; margin-bottom: 5px; }
+  #gate-box input {
+    width: 100%;
+    background: #0D1216;
+    border: 1px solid #2B343A;
+    border-radius: 6px;
+    padding: 10px 12px;
+    color: #E9E5DC;
+    font-size: 14px;
+    margin-bottom: 14px;
+    font-family: inherit;
+  }
+  #gate-box input:focus { outline: none; border-color: #C9A66B; }
+  #gate-box button {
+    width: 100%;
+    background: #C9A66B;
+    color: #10161A;
+    border: none;
+    border-radius: 6px;
+    padding: 12px;
+    font-size: 13px;
+    font-weight: 600;
+    cursor: pointer;
+    font-family: inherit;
+  }
+  #gate-box button:hover { background: #D9B87E; }
+  #gate-error { color: #D9776B; font-size: 12px; margin-top: 12px; display: none; }
+  #dashboard-root { display: none; }
+</style>
+</head>
+<body>
+
+<div id="gate">
+  <div id="gate-box">
+    <div class="eyebrow">acesso restrito</div>
+    <h1>Painel Financeiro</h1>
+    <form id="gate-form">
+      <label for="gate-user">Usuário</label>
+      <input type="text" id="gate-user" autocomplete="username" />
+      <label for="gate-pass">Senha</label>
+      <input type="password" id="gate-pass" autocomplete="current-password" />
+      <button type="submit">Entrar</button>
+      <div id="gate-error">Usuário ou senha incorretos.</div>
+    </form>
+  </div>
+</div>
+
+<div id="dashboard-root">
+<div id="app"></div>
+<style>
+  * { box-sizing: border-box; }
+  body { margin: 0; }
+  #app {
+    font-family: -apple-system, "Segoe UI", Roboto, sans-serif;
+    max-width: 760px;
+    margin: 0 auto;
+    background: #10161A;
+    color: #E9E5DC;
+    padding: 30px 26px 40px;
+    border-radius: 6px;
+  }
+  .eyebrow { font-size: 12px; color: #7C8790; margin-bottom: 2px; }
+  h1 {
+    font-family: Georgia, "Times New Roman", serif;
+    font-size: 27px;
+    font-weight: 500;
+    margin: 0 0 18px;
+    color: #F3EFE6;
+  }
+  .tabs { display: flex; gap: 8px; margin-bottom: 24px; }
+  .tab {
+    font-size: 11.5px;
+    padding: 6px 12px;
+    border-radius: 20px;
+    border: 1px solid #2B343A;
+    color: #6E7880;
+  }
+  .tab.active {
+    background: #C9A66B;
+    color: #10161A;
+    border-color: #C9A66B;
+    font-weight: 600;
+  }
+
+  .kpi-row { display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; margin-bottom: 26px; }
+  .kpi {
+    background: #161D22;
+    border: 1px solid #232C32;
+    border-radius: 8px;
+    padding: 16px 16px 14px;
+    position: relative;
+    overflow: hidden;
+  }
+  .kpi::before {
+    content: "";
+    position: absolute; left: 0; top: 0; bottom: 0; width: 3px;
+  }
+  .kpi.receita::before { background: #5E7A9E; }
+  .kpi.gastos::before { background: #C9A66B; }
+  .kpi.saldo::before { background: #6FBF8B; }
+  .kpi .label { font-size: 11px; color: #7C8790; margin-bottom: 6px; letter-spacing: 0.01em; }
+  .kpi .value { font-family: Georgia, serif; font-size: 21px; color: #F3EFE6; }
+  .kpi .sub { font-size: 10.5px; color: #6E7880; margin-top: 5px; }
+
+  .chart-section {
+    display: grid;
+    grid-template-columns: 200px 1fr;
+    gap: 26px;
+    background: #161D22;
+    border: 1px solid #232C32;
+    border-radius: 8px;
+    padding: 22px;
+    margin-bottom: 22px;
+    align-items: center;
+  }
+  .donut-wrap { position: relative; width: 190px; height: 190px; margin: 0 auto; }
+  .donut-center { position: absolute; inset: 0; display: flex; flex-direction: column; align-items: center; justify-content: center; }
+  .donut-center .amount { font-family: Georgia, serif; font-size: 19px; color: #F3EFE6; }
+  .donut-center .label { font-size: 10px; color: #7C8790; margin-top: 2px; }
+
+  .rank-list { display: flex; flex-direction: column; gap: 10px; }
+  .rank-row { display: grid; grid-template-columns: 16px 1fr auto; align-items: center; gap: 10px; font-size: 12.5px; }
+  .dot { width: 9px; height: 9px; border-radius: 50%; }
+  .rank-name { color: #D8D3C7; }
+  .rank-bar-track { grid-column: 2 / 3; height: 6px; background: #232C32; border-radius: 3px; overflow: hidden; margin-top: 4px; }
+  .rank-bar-fill { height: 100%; border-radius: 3px; }
+  .rank-value { font-variant-numeric: tabular-nums; color: #B8C0C6; white-space: nowrap; }
+  .rank-pct { color: #7C8790; font-size: 10.5px; margin-left: 6px; }
+
+  table { width: 100%; border-collapse: collapse; font-size: 12px; }
+  .table-wrap {
+    background: #161D22; border: 1px solid #232C32; border-radius: 8px;
+    padding: 6px 20px 16px; margin-bottom: 22px;
+  }
+  .table-title { font-size: 13px; color: #D8D3C7; padding: 16px 0 10px; font-weight: 600; }
+  th { text-align: left; font-size: 10.5px; color: #6E7880; font-weight: 500; padding: 6px 8px; border-bottom: 1px solid #232C32; }
+  td { padding: 8px 8px; border-bottom: 1px solid #1B2226; color: #C9C4B8; }
+  tr:last-child td { border-bottom: none; }
+  td.num { text-align: right; font-variant-numeric: tabular-nums; color: #E9E5DC; }
+  .pill {
+    display: inline-block; font-size: 10px; padding: 2px 8px; border-radius: 20px;
+    background: #1F2731; color: #A9B3BA;
+  }
+
+  button {
+    width: 100%; background: #C9A66B; color: #10161A; border: none; border-radius: 6px;
+    padding: 13px; font-size: 13px; font-weight: 600; cursor: pointer; font-family: inherit;
+  }
+  button:disabled { background: #4A5058; color: #9AA3A9; cursor: default; }
+  button:hover:not(:disabled) { background: #D9B87E; }
+
+  #status { margin-top: 14px; font-size: 12px; line-height: 1.6; white-space: pre-wrap; color: #A9B3BA; }
+  #status .err { color: #D9776B; }
+</style>
+
+<script type="text/babel">
+const { useState } = React;
+
+const transacoes = [
+  { data: "28/07", desc: "Mp *Bellaluminosa - Parcela 2/6", cartao: "Nubank", categoria: "Vestuário/Beleza", valor: 110.34 },
+  { data: "28/07", desc: "Mp *Wellerson - Parcela 10/10", cartao: "Nubank", categoria: "Transferência/Pessoal", valor: 590.70 },
+  { data: "28/07", desc: "Mp *Wellerson - Parcela 3/6", cartao: "Nubank", categoria: "Transferência/Pessoal", valor: 71.31 },
+  { data: "30/07", desc: "Odontocampos - Parcela 1/7", cartao: "Nubank", categoria: "Saúde", valor: 107.16 },
+  { data: "31/07", desc: "Posto Graffiti", cartao: "Nubank", categoria: "Transporte/Combustível", valor: 22.00 },
+  { data: "11/05", desc: "MP*MERCADOLIVRE - Parcela 4/7", cartao: "Mercado Pago •1201", categoria: "Compras Online", valor: 24.86 },
+  { data: "05/08", desc: "REDE MARIANA GNV", cartao: "Mercado Pago •1201", categoria: "Transporte/Combustível", valor: 20.00 },
+  { data: "06/08", desc: "GAMA MOTOS - Parcela 1/3", cartao: "Mercado Pago •1201", categoria: "Transporte/Manutenção", valor: 96.68 },
+  { data: "06/08", desc: "BAR DA FAMILIA", cartao: "Mercado Pago •1201", categoria: "Alimentação", valor: 168.30 },
+  { data: "06/03", desc: "MP*BELLALUMINOSA - Parcela 6/6", cartao: "Mercado Pago •7969", categoria: "Vestuário/Beleza", valor: 159.66 },
+  { data: "04/06", desc: "MP*BELLALUMINOSA - Parcela 3/6", cartao: "Mercado Pago •7969", categoria: "Vestuário/Beleza", valor: 176.90 },
+  { data: "06/07", desc: "MP*BELLALUMINOSA - Parcela 2/5", cartao: "Mercado Pago •7969", categoria: "Vestuário/Beleza", valor: 62.60 },
+  { data: "06/07", desc: "MP*BELLALUMINOSA - Parcela 2/6", cartao: "Mercado Pago •7969", categoria: "Vestuário/Beleza", valor: 35.00 },
+  { data: "07/08", desc: "MP*BELLALUMINOSA - Parcela 1/5", cartao: "Mercado Pago •7969", categoria: "Vestuário/Beleza", valor: 86.00 },
+  { data: "03/09", desc: "Tarifa de crédito emergencial", cartao: "Mercado Pago", categoria: "Tarifas Bancárias", valor: 14.90 },
+];
+
+const receitaFixa = 5200.00;
+const totalGastos = transacoes.reduce((s, t) => s + t.valor, 0);
+const saldo = receitaFixa - totalGastos;
+const pctComprometido = (totalGastos / receitaFixa * 100);
+
+const palette = ["#C9A66B", "#5E7A9E", "#6FBF8B", "#B5654B", "#8A6A85", "#5B9AA0", "#9B8F7E", "#D9776B"];
+
+const categoriasMap = {};
+transacoes.forEach(t => { categoriasMap[t.categoria] = (categoriasMap[t.categoria] || 0) + t.valor; });
+const categorias = Object.entries(categoriasMap)
+  .map(([nome, total], i) => ({ nome, total, pct: total / totalGastos * 100 }))
+  .sort((a, b) => b.total - a.total)
+  .map((c, i) => ({ ...c, color: palette[i % palette.length] }));
+
+const fmt = (v) => v.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
+
+function Donut() {
+  const r = 72, cx = 95, cy = 95, circ = 2 * Math.PI * r;
+  let acc = 0;
+  const segs = categorias.map(c => {
+    const len = (c.pct / 100) * circ;
+    const seg = { ...c, dash: `${len} ${circ - len}`, offset: -acc };
+    acc += len;
+    return seg;
+  });
+  return (
+    <div className="donut-wrap">
+      <svg viewBox="0 0 190 190" width="190" height="190">
+        <circle cx={cx} cy={cy} r={r} fill="none" stroke="#1F2731" strokeWidth="20" />
+        {segs.map((s, i) => (
+          <circle key={i} cx={cx} cy={cy} r={r} fill="none" stroke={s.color} strokeWidth="20"
+            strokeDasharray={s.dash} strokeDashoffset={s.offset}
+            transform={`rotate(-90 ${cx} ${cy})`} strokeLinecap="butt" />
+        ))}
+      </svg>
+      <div className="donut-center">
+        <div className="amount">{fmt(totalGastos)}</div>
+        <div className="label">total do mês</div>
+      </div>
+    </div>
+  );
+}
+
+function buildPrompt() {
+  const linhasResumo = categorias.map(c => `- ${c.nome}: ${fmt(c.total)} (${c.pct.toFixed(1)}%)`).join("\n");
+  const linhasTransacoes = transacoes.map(t => `- ${t.data} | ${t.desc} | ${t.cartao} | ${t.categoria} | ${fmt(t.valor)}`).join("\n");
+  return `Você tem acesso ao meu workspace do Notion via MCP. Preciso que você crie (ou atualize, se já existirem) as seguintes páginas para eu acompanhar meu orçamento mês a mês.
+
+Primeiro, procure se já existe uma página de nível superior chamada "💰 Início". Se não existir, crie-a. Ela deve conter:
+1. Um bloco de texto com o resumo: Receita fixa mensal ${fmt(receitaFixa)}, Total gasto em faturas do mês atual ${fmt(totalGastos)}, Saldo ${fmt(saldo)} (${pctComprometido.toFixed(1)}% da renda comprometida).
+2. Uma tabela "Resumo por Categoria" com colunas Categoria | Total | % do gasto:
+${linhasResumo}
+3. Um texto explicando que cada mês tem sua própria subpágina, para acompanhar a evolução financeira, e uma lista com link para as subpáginas de meses (por enquanto apenas "Setembro/2026").
+
+Dentro da página "💰 Início", crie uma subpágina chamada "Setembro/2026" contendo, nesta ordem:
+1. Identificação dos cartões desta fatura: Nubank (Visa, titular Wellerson Fidelis Ribeiro, venc. 04/09/2026) e Mercado Pago (Visa terminações 1201 e 7969, mesmo titular, venc. 08/09/2026).
+2. Uma tabela "Resumo por Categoria" (Categoria | Total | %):
+${linhasResumo}
+3. Uma tabela "Transações Completas" (Data | Descrição | Cartão | Categoria | Valor) com todas as linhas:
+${linhasTransacoes}
+4. Um bloco de "Balanço do Mês": Receita Fixa ${fmt(receitaFixa)} − Total de Faturas ${fmt(totalGastos)} = Saldo ${fmt(saldo)}.
+
+Ao final, me diga em texto simples quais páginas você criou ou atualizou e confirme os links.`;
+}
+
+function App() {
+  const [status, setStatus] = useState(null);
+  const [loading, setLoading] = useState(false);
+  const maxCat = Math.max(...categorias.map(c => c.total));
+
+  const runExport = async () => {
+    setLoading(true);
+    setStatus("Conectando ao Notion e criando as páginas...");
+    try {
+      const response = await fetch("https://api.anthropic.com/v1/messages", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          model: "claude-sonnet-4-6",
+          max_tokens: 1000,
+          messages: [{ role: "user", content: buildPrompt() }],
+          mcp_servers: [{ type: "url", url: "https://mcp.notion.com/mcp", name: "notion-mcp" }]
+        })
+      });
+      const data = await response.json();
+      if (data.error) { setStatus("Erro: " + (data.error.message || JSON.stringify(data.error))); setLoading(false); return; }
+      const textBlocks = (data.content || []).filter(b => b.type === "text").map(b => b.text).join("\n");
+      setStatus(textBlocks || "Concluído, mas sem resposta em texto — confira seu Notion.");
+    } catch (e) { setStatus("Erro ao conectar: " + e.message); }
+    setLoading(false);
+  };
+
+  return (
+    <div>
+      <div className="eyebrow">painel financeiro</div>
+      <h1>Visão geral · Setembro 2026</h1>
+
+      <div className="tabs">
+        <div className="tab active">Set/26</div>
+        <div className="tab">Out/26</div>
+        <div className="tab">Nov/26</div>
+      </div>
+
+      <div className="kpi-row">
+        <div className="kpi receita">
+          <div className="label">Receita fixa</div>
+          <div className="value">{fmt(receitaFixa)}</div>
+        </div>
+        <div className="kpi gastos">
+          <div className="label">Total de faturas</div>
+          <div className="value">{fmt(totalGastos)}</div>
+          <div className="sub">{pctComprometido.toFixed(1)}% da renda</div>
+        </div>
+        <div className="kpi saldo">
+          <div className="label">Saldo do mês</div>
+          <div className="value">{fmt(saldo)}</div>
+        </div>
+      </div>
+
+      <div className="chart-section">
+        <Donut />
+        <div className="rank-list">
+          {categorias.map((c, i) => (
+            <div key={i}>
+              <div className="rank-row">
+                <span className="dot" style={{ background: c.color }}></span>
+                <span className="rank-name">{c.nome}</span>
+                <span className="rank-value">{fmt(c.total)}<span className="rank-pct">{c.pct.toFixed(1)}%</span></span>
+              </div>
+              <div className="rank-bar-track">
+                <div className="rank-bar-fill" style={{ width: (c.total / maxCat * 100) + "%", background: c.color }}></div>
+              </div>
+            </div>
+          ))}
+        </div>
+      </div>
+
+      <div className="table-wrap">
+        <div className="table-title">Transações · 28 jul a 03 set</div>
+        <table>
+          <thead>
+            <tr><th>Data</th><th>Descrição</th><th>Cartão</th><th>Categoria</th><th style={{textAlign:'right'}}>Valor</th></tr>
+          </thead>
+          <tbody>
+            {transacoes.map((t, i) => {
+              const cat = categorias.find(c => c.nome === t.categoria);
+              return (
+                <tr key={i}>
+                  <td>{t.data}</td>
+                  <td>{t.desc}</td>
+                  <td>{t.cartao}</td>
+                  <td><span className="pill" style={{ color: cat.color }}>{t.categoria}</span></td>
+                  <td className="num">{fmt(t.valor)}</td>
+                </tr>
+              );
+            })}
+          </tbody>
+        </table>
+      </div>
+
+      <button onClick={runExport} disabled={loading}>
+        {loading ? "Criando páginas no Notion..." : "Criar / atualizar no Notion"}
+      </button>
+      {status && <div id="status">{status.includes("Erro") ? <span className="err">{status}</span> : status}</div>}
+    </div>
+  );
+}
+
+ReactDOM.createRoot(document.getElementById('app')).render(<App />);
+</script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/react/18.3.1/umd/react.production.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/react-dom/18.3.1/umd/react-dom.production.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/babel-standalone/7.24.7/babel.min.js"></script>
+
+</div>
+
+<script>
+  (function() {
+    var USERNAME = "Wellerson";
+    var PASSWORD = "27122019";
+
+    function showDashboard() {
+      document.getElementById("gate").style.display = "none";
+      document.getElementById("dashboard-root").style.display = "block";
+    }
+
+    if (sessionStorage.getItem("pf_auth") === "ok") {
+      showDashboard();
+    }
+
+    document.getElementById("gate-form").addEventListener("submit", function(e) {
+      e.preventDefault();
+      var user = document.getElementById("gate-user").value.trim();
+      var pass = document.getElementById("gate-pass").value.trim();
+      if (user.toLowerCase() === USERNAME.toLowerCase() && pass === PASSWORD) {
+        sessionStorage.setItem("pf_auth", "ok");
+        showDashboard();
+      } else {
+        document.getElementById("gate-error").style.display = "block";
+      }
+    });
+  })();
+</script>
+
+</body>
+</html>
